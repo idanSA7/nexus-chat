@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
-// 1. תוסיף את השורה הזאת למעלה (תבדוק שהנתיב נכון, אולי זה ./register/register)
-import { Register } from './register/register'; 
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  // 2. תוסיף את Register למערך ה-imports כאן!
-  imports: [Register], 
-  templateUrl: './app.html'
+  imports: [RouterOutlet], // חובה לייבא את ה-Outlet כדי שהדפים יתחלפו!
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
 })
 export class AppComponent {
+  title = 'nexus-chat';
 }

@@ -1,1 +1,13 @@
 /* You can add global styles to this file, and also import other style files */
+/* STREAMING_CHUNK: Injecting Tailwind directives... */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* עיצוב גלובלי נוסף לחווית וואטסאפ מושלמת */
+body {
+  margin: 0;
+  background-color: #111b21;
+  font-family: 'Assistant', sans-serif;
+  overflow-x: hidden;
+}

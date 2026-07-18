@@ -3,14 +3,19 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from './users.controller'; 
 import { UsersService } from './users.service';       
 import { User, UserSchema } from './schemas/user.schema';
+import { Friendship, FriendshipSchema } from './schemas/friendship.schema';
+import { AuthModule } from '../auth/auth.module'; // מייבאים את מודול האבטחה בצורה נקייה וישרה
 
 @Module({
     imports: [
-        // הוסף כאן את ה-Connection string שלך למערך ה-imports
-        MongooseModule.forRoot('mongodb+srv://idansalhani_db_user:PcYmyCmxzzPl7hoj@cluster0.esxjzep.mongodb.net/nexus-chat?retryWrites=true&w=majority'),
-        MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])
+        MongooseModule.forFeature([
+            { name: User.name, schema: UserSchema },
+            { name: Friendship.name, schema: FriendshipSchema }
+        ]),
+        AuthModule // יבוא ישיר וקישור נקי, בלי forwardRef!
     ],
     controllers: [UsersController],
     providers: [UsersService],
+    exports: [UsersService]
 })
-export class AppModule {}
+export class UsersModule {}
