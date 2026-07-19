@@ -18,7 +18,7 @@ export class UsersController {
     return this.usersService.login(loginDto);
   }
 
-  // 🔓 קוראים את מזהה השולח ישירות מה-Header 'x-user-id' ללא Guards!
+  //  קוראים את מזהה השולח ישירות מה-Header 'x-user-id' ללא Guards!
   @Post('friendRequest')
   friendRequest(
     @Headers('x-user-id') userId: string, 
@@ -34,6 +34,7 @@ export class UsersController {
   ) {
     return this.usersService.deleteFriend(userId, deleteFriend.targetUsername);
   }
+  
 
   @Patch('acceptFriend')
   acceptFriend(

@@ -6,10 +6,14 @@ import { ChatsModule } from './chats/chats.module';
 import { MessagesModule } from './messages/messages.module';
 @Module({
   imports: [
-    // פה מחברים את בסיס הנתונים פעם אחת לכל האפליקציה!
     MongooseModule.forRoot('mongodb://localhost:27017/nexus-chat'),
-    UsersModule,  // מייבאים את המודול של היוזרים
-    AuthModule, ChatsModule, MessagesModule 
+    
+    UsersModule,
+    AuthModule,
+    ChatsModule,
+    MessagesModule
   ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

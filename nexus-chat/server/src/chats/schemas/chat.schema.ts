@@ -11,6 +11,7 @@ export class Chat extends Document {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], required: true })
   members?: Types.ObjectId[];
+  
   @Prop({ required: false })
   description?: string;
 }

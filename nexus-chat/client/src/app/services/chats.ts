@@ -9,33 +9,32 @@ export class ChatsService {
   private readonly apiUrl = 'http://localhost:3000/chats';
   private http = inject(HttpClient);
 
-  // 👥 יצירת קבוצה חדשה במערכת
   createGroup(name: string, members: string[]): Observable<any> {
     return this.http.post(`${this.apiUrl}/group`, { name, members });
   }
 
-  // ✏️ עדכון שם קבוצה קיימת
+  getGroupMembers(chatId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${chatId}/members`);
+  }
+
   updateGroupName(chatId: string, name: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/${chatId}/name`, { name });
   }
 
-  // 📝 עדכון תיאור קבוצה
   updateGroupDescription(chatId: string, description: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/${chatId}/description`, { description });
   }
 
-  // 👥 שליפת חברי קבוצה
-  getGroupMembers(chatId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/${chatId}/members`);
-  }
-
-  // ➕ הוספת חבר חדש לקבוצה קיימת
   addMemberToGroup(chatId: string, username: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/${chatId}/add-member`, { username });
   }
 
-  // ➖ הסרת חבר מקבוצה קיימת
   removeMemberFromGroup(chatId: string, username: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/${chatId}/remove-member`, { username });
+  }
+
+  // 🚀 פונקציה חדשה בקליינט לקבלת או יצירת שיחה פרטית אמיתית מהשרת!
+  getOrCreatePrivateChat(targetUsername: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/private/${targetUsername}`);
   }
 }

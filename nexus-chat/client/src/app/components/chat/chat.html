@@ -1,1 +1,256 @@
-<p>chat works!</p>
+<div class="h-screen w-screen flex bg-[#f0f2f5] overflow-hidden font-sans" style="direction: rtl;">
+  
+  <!-- 🟢 צד שמאל: רשימת השיחות ופילטרים -->
+  <aside class="w-[380px] h-full bg-white border-l border-gray-200 flex flex-col z-10 flex-shrink-0">
+    
+    <!-- פרופיל עליון + כפתורי ניהול בסגנון וואטסאפ -->
+    <header class="h-[60px] bg-[#f0f2f5] px-4 flex items-center justify-between border-b border-gray-200">
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 rounded-full bg-[#00a884] text-white flex items-center justify-center font-bold shadow-sm">
+          {{ currentUsername().substring(0, 2).toUpperCase() }}
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-bold text-gray-800">{{ currentUsername() }}</span>
+          <span class="text-[10px] text-green-600 font-semibold flex items-center gap-0.5">
+            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+            מחובר
+          </span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 text-gray-500">
+        <button (click)="showAddFriend.set(true)" class="p-1.5 rounded-full hover:bg-gray-200/70 transition-colors" title="הוספת חבר">
+          <span class="material-symbols-outlined">person_add</span>
+        </button>
+        <button (click)="showCreateGroup.set(true)" class="p-1.5 rounded-full hover:bg-gray-200/70 transition-colors" title="קבוצה חדשה">
+          <span class="material-symbols-outlined">group_add</span>
+        </button>
+        <button (click)="logout()" class="p-1.5 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" title="התנתק מהמערכת">
+          <span class="material-symbols-outlined">logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- תיבת חיפוש מהירה -->
+    <div class="p-3 bg-white border-b">
+      <div class="relative">
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery"
+          class="w-full pl-4 pr-10 py-2 bg-[#f0f2f5] border-none rounded-xl text-sm outline-none text-gray-700 placeholder-gray-400 focus:bg-white focus:ring-1 focus:ring-gray-200"
+          placeholder="חפש שיחה או שם חבר"
+        />
+      </div>
+    </div>
+
+    <!-- פילטרים מהירים -->
+    <div class="px-3 py-2 bg-white flex gap-1.5 border-b">
+      <button 
+        (click)="activeFilter.set('all')"
+        [ngClass]="activeFilter() === 'all' ? 'bg-[#e6f7f4] text-[#00a884]' : 'bg-gray-100 text-gray-500 hover:bg-gray-200/70'"
+        class="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+      >
+        הכל
+      </button>
+      <button 
+        (click)="activeFilter.set('groups')"
+        [ngClass]="activeFilter() === 'groups' ? 'bg-[#e6f7f4] text-[#00a884]' : 'bg-gray-100 text-gray-500 hover:bg-gray-200/70'"
+        class="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+      >
+        קבוצות
+      </button>
+      <button 
+        (click)="activeFilter.set('friends')"
+        [ngClass]="activeFilter() === 'friends' ? 'bg-[#e6f7f4] text-[#00a884]' : 'bg-gray-100 text-gray-500 hover:bg-gray-200/70'"
+        class="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+      >
+        אנשי קשר
+      </button>
+    </div>
+
+    <!-- רשימת השיחות עצמה -->
+    <div class="flex-grow overflow-y-auto divide-y divide-gray-100 bg-white">
+      @if (loadingChats()) {
+        <div class="flex flex-col items-center justify-center py-10 gap-2">
+          <span class="w-6 h-6 border-2 border-[#00a884] border-t-transparent rounded-full animate-spin"></span>
+          <span class="text-xs text-gray-400 font-medium">טוען שיחות...</span>
+        </div>
+      } @else {
+        @for (item of filteredItems(); track item._id) {
+          <div 
+            (click)="selectConversation(item)"
+            [ngClass]="activeChat()?._id === item._id || (activeChat()?.type === 'private' && activeChat()?.username === item.username) ? 'bg-[#f0f2f5]' : 'hover:bg-gray-50'"
+            class="flex items-center justify-between p-3.5 cursor-pointer transition-colors relative"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <div 
+                [ngClass]="item.type === 'group' ? 'bg-[#00a884]/10 text-[#00a884]' : 'bg-[#e3f2fd] text-[#1e88e5]'"
+                class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0"
+              >
+                {{ getAvatarInitials(item) }}
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm font-bold text-gray-800 truncate">{{ item.name || item.username }}</span>
+                <span class="text-[11px] text-gray-400 font-medium truncate">
+                  {{ item.type === 'group' ? 'קבוצה' : 'שיחה פרטית' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- לחצן מחיקת חבר (מופיע רק בפילטר חברים ורק בשיחה פרטית) -->
+            @if (item.type !== 'group') {
+              <button 
+                (click)="deleteFriend($event, item.username)"
+                class="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 transition-colors opacity-0 hover:opacity-100 md:group-hover:opacity-100"
+                title="מחק איש קשר"
+              >
+                <span class="material-symbols-outlined text-base">delete</span>
+              </button>
+            }
+          </div>
+        } @empty {
+          <div class="text-center py-12 px-4">
+            <span class="material-symbols-outlined text-4xl text-gray-300">chat_bubble_outline</span>
+            <p class="text-xs text-gray-400 font-semibold mt-2">אין שיחות התואמות את החיפוש שלך.</p>
+          </div>
+        }
+      }
+    </div>
+  </aside>
+
+  <!-- 🔵 צד ימין: מסך הצ'אט והודעות -->
+  <main class="flex-grow h-full bg-[#efeae2] flex flex-col relative">
+    
+    @if (activeChat()) {
+      <!-- כותרת הצ'אט הפעיל -->
+      <header class="h-[60px] bg-[#f0f2f5] px-4 flex items-center justify-between border-b border-gray-200 z-10">
+        <div class="flex items-center gap-3">
+          <div 
+            [ngClass]="activeChat().type === 'group' ? 'bg-[#00a884]/15 text-[#00a884]' : 'bg-[#e3f2fd] text-[#1e88e5]'"
+            class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-sm"
+          >
+            {{ getAvatarInitials(activeChat()) }}
+          </div>
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-gray-800">{{ activeChat().name || activeChat().username }}</span>
+            <span class="text-[10px] text-gray-400 font-medium">
+              {{ activeChat().type === 'group' ? 'קבוצת שיחה' : 'שיחה מאובטחת' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- כפתור הגדרות קבוצה - מופיע רק אם מדובר בצ'אט קבוצתי -->
+          @if (activeChat().type === 'group') {
+            <button 
+              (click)="showGroupSettings.set(true)"
+              class="p-2 rounded-full hover:bg-gray-200/70 text-gray-500 transition-colors"
+              title="הגדרות קבוצה"
+            >
+              <span class="material-symbols-outlined">settings</span>
+            </button>
+          }
+        </div>
+      </header>
+
+      <!-- הודעות בצ'אט -->
+      <div class="flex-grow overflow-y-auto p-4 space-y-3 flex flex-col bg-[#efeae2] relative shadow-inner">
+        @if (loadingMessages()) {
+          <div class="flex flex-col items-center justify-center h-full gap-2">
+            <span class="w-8 h-8 border-3 border-[#00a884] border-t-transparent rounded-full animate-spin"></span>
+            <span class="text-xs text-gray-500 font-medium">טוען הודעות בבטחה...</span>
+          </div>
+        } @else {
+          @for (msg of messages(); track msg._id) {
+            <div 
+              [ngClass]="msg.sendingUser?.username === currentUsername() ? 'self-end bg-[#d9fdd3] text-gray-800 rounded-tr-none rounded-br-2xl' : 'self-start bg-white text-gray-800 rounded-tl-none rounded-bl-2xl'"
+              class="max-w-[70%] p-3 rounded-2xl shadow-sm text-sm flex flex-col relative transition-all"
+            >
+              <!-- שם השולח (מופיע רק בקבוצות ואם זה לא אני) -->
+              @if (activeChat().type === 'group' && msg.sendingUser?.username !== currentUsername()) {
+                <span class="text-[10px] text-[#008f6c] font-bold mb-1">{{ msg.sendingUser?.username }}</span>
+              }
+              <span class="leading-relaxed break-words font-medium">{{ msg.content }}</span>
+              <span class="text-[9px] text-gray-400 self-end mt-1 font-semibold">
+                {{ msg.createdAt | date:'HH:mm' }}
+              </span>
+            </div>
+          } @empty {
+            <div class="flex flex-col items-center justify-center h-full gap-3 text-center">
+              <div class="w-16 h-16 rounded-full bg-white/50 text-[#00a884]/80 flex items-center justify-center shadow-inner">
+                <span class="material-symbols-outlined text-3xl">chat</span>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-gray-700">אין כאן הודעות עדיין.</p>
+                <p class="text-xs text-gray-400 mt-0.5">כתוב את ההודעה הראשונה והתחל לדבר!</p>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- מקלדת ושליחה תחתון -->
+      <footer class="p-3 bg-[#f0f2f5] flex items-center gap-3 border-t border-gray-200 z-10">
+        <div class="flex-grow">
+          <input 
+            type="text" 
+            [(ngModel)]="newMessageText"
+            (keydown.enter)="sendMessage()"
+            class="w-full px-4 py-3 bg-white border-none rounded-xl text-sm outline-none text-gray-700 placeholder-gray-400 shadow-sm focus:ring-1 focus:ring-gray-200"
+            placeholder="הקלד הודעה מאובטחת..."
+          />
+        </div>
+        <button 
+          (click)="sendMessage()"
+          [disabled]="!newMessageText().trim()"
+          class="bg-[#00a884] hover:bg-[#008f6c] text-white p-3 rounded-full shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+        >
+          <span class="material-symbols-outlined text-lg">send</span>
+        </button>
+      </footer>
+
+    } @else {
+      <!-- מסך ריק (כשלא נבחרה שיחה) בסגנון וואטסאפ הקלאסי -->
+      <div class="h-full w-full flex flex-col items-center justify-center text-center p-6 bg-[#f8f9fa]">
+        <div class="bg-white p-12 rounded-3xl shadow-xl max-w-lg w-full border-t-8 border-[#00a884] space-y-6 animate-fade-in">
+          <div class="inline-flex items-center justify-center bg-[#f0f2f5] text-[#00a884] p-5 rounded-full shadow-inner animate-bounce">
+            <span class="material-symbols-outlined text-6xl">chat_bubble</span>
+          </div>
+          <h1 class="text-3xl font-extrabold text-gray-800">Nexus Chat Web 🎉</h1>
+          <p class="text-gray-500 font-medium">שלח וקבל הודעות מקצה לקצה ללא צורך בהשארת הטלפון מחובר.</p>
+          <div class="mt-8 flex items-center justify-center gap-2 text-xs text-gray-400">
+            <span class="material-symbols-outlined text-sm">lock_reset</span>
+            <span>השיחות שלך מוצפנות מקצה לקצה ומאובטחות לחלוטין.</span>
+          </div>
+        </div>
+      </div>
+    }
+
+  </main>
+</div>
+
+<!-- 🚪 שימוש במודאלים העצמאיים החדשים בצורה אלגנטית ומאובטחת -->
+@if (showAddFriend()) {
+  <app-add-friend-modal 
+    (close)="showAddFriend.set(false)" 
+    (friendAdded)="loadFriendsAndGroups()"
+  ></app-add-friend-modal>
+}
+
+@if (showCreateGroup()) {
+  <app-create-group-modal 
+    [friends]="friends()" 
+    (close)="showCreateGroup.set(false)"
+    (groupCreated)="onGroupCreated($event)"
+  ></app-create-group-modal>
+}
+
+@if (showGroupSettings()) {
+  <app-group-settings-modal 
+    [activeChat]="activeChat()"
+    [currentUsername]="currentUsername()"
+    (close)="showGroupSettings.set(false)"
+    (groupUpdated)="onGroupUpdated($event)"
+  ></app-group-settings-modal>
+}

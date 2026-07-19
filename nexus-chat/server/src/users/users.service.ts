@@ -44,7 +44,7 @@ export class UsersService {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password!);
-    if (!isPasswordValid) {
+    if (!isPasswordValid) {                                                    // מה הבדיקה הזאת בודקת, איפה משיגים את הדי טי או שהפונקציה מקבלת, ומה זה הקובץ הזה ברטרן איך מחזירים 3 משתנים ולא רק אחד
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -101,56 +101,49 @@ export class UsersService {
     return { message: `Friendship with ${targetUsername} deleted successfully` };
   }
 
-  // 🤝 אישור בקשת החברות באמצעות מעקף הדרייבר הישיר של מונגו!
   async acceptFriendRequest(myUserId: string, targetUsername: string) {
+    console.log('=== תחילת בדיקת אישור חברות ===');
+    console.log('1. המשתמש המחובר ב-Header (מי שאמור לאשר):', myUserId);
+    console.log('2. ה-targetUsername שהתקבל ב-Body:', targetUsername);
+
+    // 1. מוצאים את המשתמש ששלח את הבקשה לפי ה-Username שלו
     const targetUser = await this.userModel.findOne({ username: targetUsername });
     if (!targetUser) {
+      console.log('❌ שגיאה: לא נמצא משתמש ב-DB עם השם:', targetUsername);
       throw new ConflictException('User not found');
     }
 
-    // מגדירים את מזהי המשתמשים בכל הפורמטים האפשריים (ObjectId ו-String)
+    console.log('3. המשתמש ששלח את הבקשה נמצא ב-DB. ה-ID שלו הוא:', targetUser._id.toString());
+
+    // 2. הגדרת המזהים בכל הפורמטים האפשריים כדי להדפיס ולבדוק
+    const targetUserObjectId = new Types.ObjectId(targetUser.id);
     const myUserObjectId = new Types.ObjectId(myUserId);
-    const targetUserObjectId = targetUser._id instanceof Types.ObjectId 
-      ? targetUser._id 
-      : new Types.ObjectId(targetUser._id as string);
 
-    const allowedMyUserIds = [myUserObjectId, myUserId, myUserId.toString()];
-    const allowedTargetUserIds = [targetUserObjectId, targetUser._id, targetUser._id.toString()];
+    console.log('4. מריץ שאילתה במונגו עם הערכים הבאים:');
+    console.log(`סטטוס: pending`);
+    console.log(`sendingUser (ObjectId): ${targetUserObjectId}`);
+    console.log(`receivingUser (ObjectId): ${myUserObjectId}`);
 
-    // 🚀 פנייה ישירה לדרייבר הגולמי של MongoDB (עוקף את מנגנון Strict Schema של Mongoose!)
-    const rawPendingRequest = await this.friendshipModel.collection.findOne({
+    // 3. ניסיון חיפוש גמיש במיוחד (גם כאובייקטים וגם כמחרוזות)
+    const pendingRequest = await this.friendshipModel.findOne({
       status: 'pending',
       $or: [
-        // בודק את כל השילובים האפשריים של השדות (כולל שגיאת הכתיב הישנה recivingUser ב-DB!)
-        {
-          sendingUser: { $in: allowedTargetUserIds },
-          receivingUser: { $in: allowedMyUserIds }
-        },
-        {
-          sendingUser: { $in: allowedTargetUserIds },
-          recivingUser: { $in: allowedMyUserIds }
-        },
-        {
-          sendingUser: { $in: allowedMyUserIds },
-          receivingUser: { $in: allowedTargetUserIds }
-        },
-        {
-          sendingUser: { $in: allowedMyUserIds },
-          recivingUser: { $in: allowedTargetUserIds }
-        }
+        { sendingUser: targetUserObjectId, receivingUser: myUserObjectId },
+        { sendingUser: targetUser.id, receivingUser: myUserId }
       ]
-    } as any);
+    });
 
-    if (!rawPendingRequest) {
+    if (!pendingRequest) {
+      console.log('❌ שגיאה: מונגו לא מצא שום רשומה מתאימה בטבלת friendships!');
+      console.log('=== סוף בדיקת אישור חברות ===');
       throw new ConflictException('No pending friend request found between users');
     }
 
-    // 🎉 נמצא המסמך הגולמי! נעדכן אותו ישירות ב-Database
-    await this.friendshipModel.collection.updateOne(
-      { _id: rawPendingRequest._id },
-      { $set: { status: 'accepted' } }
-    );
+    console.log('✅ הצלחה! הבקשה נמצאה. מעדכן ל-accepted...');
+    pendingRequest.status = 'accepted';
+    await pendingRequest.save();
 
+    console.log('=== סוף בדיקת אישור חברות ===');
     return { message: `Friend request from ${targetUsername} accepted successfully` };
   }
 
@@ -167,28 +160,25 @@ export class UsersService {
       .populate('sendingUser receivingUser');
 
     return friendships.map(friendship => {
-      const sender = friendship.sendingUser as any;
-      const receiver = friendship.receivingUser as any;
+      const sender = friendship.sendingUser ;
+      const receiver = friendship.receivingUser ;
       return sender._id.toString() === myUserId ? receiver : sender;
     });
   }
 
+ 
   async getPendingRequests(myUserId: string) {
-    const myUserObjectId = new Types.ObjectId(myUserId);
-    
-    // שליפה גמישה גם של בקשות ישנות התומכת בשגיאת הכתיב הגולמית
-    const pendingFriendships = await this.friendshipModel
+    return this.friendshipModel
       .find({
         $or: [
-          { receivingUser: myUserObjectId },
-          { recivingUser: myUserObjectId }
+          { receivingUser: myUserId },
+          { recivingUser: myUserId }
         ],
         status: 'pending'
-      } as any)
+      } )
       .populate('sendingUser', 'username');
 
-    return pendingFriendships
-      .map(f => f.sendingUser)
-      .filter(u => u !== null && u !== undefined);
-  }
+  } 
+
+
 }

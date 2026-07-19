@@ -4,7 +4,6 @@ import { ChatsController } from './chats.controller';
 import { ChatsService } from './chats.service';
 import { Chat, ChatSchema } from './schemas/chat.schema';
 import { User, UserSchema } from '../users/schemas/user.schema'; // ייבוא סכמת המשתמש לצורך קישור ה-populate
-import { ChatsGateway } from './chats.gateway';
 
 @Module({
   imports: [
@@ -15,7 +14,7 @@ import { ChatsGateway } from './chats.gateway';
     ])
   ],
   controllers: [ChatsController],
-  providers: [ChatsService, ChatsGateway],
+  providers: [ChatsService],
   exports: [ChatsService]
 })
 export class ChatsModule {}

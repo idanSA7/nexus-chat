@@ -54,9 +54,9 @@ import { AuthService } from '../../services/auth.service';
                 placeholder="הקלד שם משתמש"
               />
             </div>
-            @if (authForm.get('username')?.invalid && authForm.get('username')?.touched) {
-              <p class="text-red-500 text-xs mt-1">שם משתמש תקין הוא חובה (לפחות 3 תווים)</p>
-            }
+            <p *ngIf="authForm.get('username')?.invalid && authForm.get('username')?.touched" class="text-red-500 text-xs mt-1">
+              שם משתמש תקין הוא חובה (לפחות 3 תווים)
+            </p>
           </div>
 
           <!-- שדה סיסמה -->
@@ -72,12 +72,12 @@ import { AuthService } from '../../services/auth.service';
                 placeholder="הקלד סיסמה"
               />
             </div>
-            @if (authForm.get('password')?.invalid && authForm.get('password')?.touched) {
-              <p class="text-red-500 text-xs mt-1">הסיסמה חייבת להכיל לפחות 6 תווים</p>
-            }
+            <p *ngIf="authForm.get('password')?.invalid && authForm.get('password')?.touched" class="text-red-500 text-xs mt-1">
+              הסיסמה חייבת להכיל לפחות 6 תווים
+            </p>
           </div>
 
-          <!-- כפתור שליחה יפהפה -->
+          <!-- כפתור שליחה -->
           <button 
             type="submit" 
             [disabled]="authForm.invalid || isLoading()"
@@ -90,14 +90,13 @@ import { AuthService } from '../../services/auth.service';
         </form>
 
         <!-- התראות דינמיות מהשרת -->
-        @if (alertMessage()) {
-          <div 
-            [ngClass]="isError() ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'"
-            class="mt-6 p-4 rounded-xl text-center font-medium text-sm border"
-          >
-            {{ alertMessage() }}
-          </div>
-        }
+        <div 
+          *ngIf="alertMessage()"
+          [ngClass]="isError() ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'"
+          class="mt-6 p-4 rounded-xl text-center font-medium text-sm border animate-pulse"
+        >
+          {{ alertMessage() }}
+        </div>
 
       </div>
 
@@ -168,9 +167,9 @@ export class LoginComponent {
         } else {
           this.alertMessage.set(`התחברת בהצלחה! נכנס לצ'אט... 🚀`);
           
-          // 🔑 שומרים את הנתונים האמיתיים של המשתמש בדפדפן!
+          /* 🔑 שמירת הערכים הנכונים בבטחה ב-localStorage של הדפדפן */
           localStorage.setItem('username', response.username);
-          localStorage.setItem('userId', response.userId);
+          localStorage.setItem('userId', response.userId); // <-- כאן התיקון הקריטי! עכשיו ה-userId יישמר!
           
           setTimeout(() => this.router.navigate(['/chat']), 1500);
         }

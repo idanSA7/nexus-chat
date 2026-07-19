@@ -17,29 +17,29 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/login`, userData);
   }
 
-  // 👥 שליחת בקשת חברות חדשה
+  // sendFriendRequest
   sendFriendRequest(targetUsername: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/friendRequest`, { targetUsername });
   }
 
-  // ❌ מחיקת חבר קיים
+  // deleteFriend
   deleteFriend(targetUsername: string): Observable<any> {
     return this.http.request('delete', `${this.apiUrl}/deleteFriend`, {
       body: { targetUsername }
     });
   }
 
-  // 🤝 אישור בקשת חברות ממתינה
+  // acceptFriend
   acceptFriend(targetUsername: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/acceptFriend`, { targetUsername });
   }
 
-  // 📜 שליפת כל החברים המאושרים שלי
+  // getfriend
   getFriends(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/friends`);
   }
 
-  // 📥 שליפת כל בקשות החברות שממתינות לאישור שלי
+  // getPendingRequests
   getPendingRequests(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/friendRequests/pending`);
   }

@@ -1,0 +1,213 @@
+import { Component, inject, signal, input, output, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ChatsService } from '../../../services/chats';
+
+@Component({
+  selector: 'app-group-settings-modal',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl w-full max-w-[500px] p-6 shadow-2xl border-t-4 border-[#00a884] animate-fade-in flex flex-col max-h-[90vh]">
+        
+        <!-- כותרת -->
+        <div class="flex justify-between items-center mb-6 border-b pb-3 flex-shrink-0">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#00a884]">settings</span>
+            ניהול הגדרות קבוצה
+          </h3>
+          <button (click)="close.emit()" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="space-y-6 overflow-y-auto pr-1 flex-grow">
+          
+          <!-- 1. עדכון שם ותיאור -->
+          <div class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <h4 class="font-bold text-gray-700 text-sm flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm text-[#00a884]">edit</span>
+              פרטי קבוצה בסיסיים
+            </h4>
+            
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-1">שם הקבוצה</label>
+              <div class="flex gap-2">
+                <input 
+                  type="text" 
+                  [(ngModel)]="groupSettingsName"
+                  class="flex-grow px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:border-[#00a884] outline-none"
+                />
+                <button (click)="updateGroupName()" class="bg-[#e6f7f4] text-[#00a884] hover:bg-[#00a884] hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition-all">
+                  עדכן
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-1">תיאור קצר</label>
+              <div class="flex gap-2">
+                <input 
+                  type="text" 
+                  [(ngModel)]="groupSettingsDesc"
+                  class="flex-grow px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:border-[#00a884] outline-none"
+                  placeholder="הוסף תיאור לקבוצה"
+                />
+                <button (click)="updateGroupDescription()" class="bg-[#e6f7f4] text-[#00a884] hover:bg-[#00a884] hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition-all">
+                  עדכן
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. הוספת חבר חדש -->
+          <div class="space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <h4 class="font-bold text-gray-700 text-sm flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm text-[#00a884]">person_add</span>
+              צרף חבר חדש
+            </h4>
+            <div class="flex gap-2">
+              <input 
+                type="text" 
+                [(ngModel)]="newGroupMemberUsername"
+                class="flex-grow px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:border-[#00a884] outline-none"
+                placeholder="הקלד שם משתמש מדויק"
+              />
+              <button (click)="addMemberToGroup()" class="bg-[#00a884] text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#008f6c] transition-all">
+                הוסף
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. רשימת החברים הקיימים עם אפשרות להסרה -->
+          <div>
+            <h4 class="font-bold text-gray-700 text-sm mb-3 flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm text-[#00a884]">groups</span>
+              חברי הקבוצה כרגע ({{ groupMembers().length }})
+            </h4>
+
+            <div class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+              @for (member of groupMembers(); track member._id) {
+                <div class="flex justify-between items-center bg-[#f8f9fa] p-3 rounded-xl border border-gray-100">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center font-bold text-xs">
+                      {{ member.username?.substring(0, 2).toUpperCase() }}
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700">{{ member.username }}</span>
+                  </div>
+                  
+                  <!-- לא מאפשרים למשתמש להסיר את עצמו בטעות מהמודאל הזה -->
+                  @if (member.username !== currentUsername()) {
+                    <button 
+                      (click)="removeMemberFromGroup(member.username)"
+                      class="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 transition-all flex items-center justify-center"
+                      title="הסר מהקבוצה"
+                    >
+                      <span class="material-symbols-outlined text-lg">person_remove</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  `
+})
+export class GroupSettingsComponent implements OnInit {
+  private chatsService = inject(ChatsService);
+
+  activeChat = input<any>(null); // מקבל את השיחה הפעילה
+  currentUsername = input<string>(''); // השם שלי
+
+  groupMembers = signal<any[]>([]);
+  groupSettingsName = signal<string>('');
+  groupSettingsDesc = signal<string>('');
+  newGroupMemberUsername = signal<string>('');
+
+  close = output<void>();
+  groupUpdated = output<any>(); // מעדכן את קומפוננטת האב שפרטי הקבוצה השתנו
+
+  ngOnInit() {
+    const chat = this.activeChat();
+    if (chat) {
+      this.groupSettingsName.set(chat.name || '');
+      this.groupSettingsDesc.set(chat.description || '');
+      this.loadGroupMembers(chat._id);
+    }
+  }
+
+  loadGroupMembers(chatId: string) {
+    this.chatsService.getGroupMembers(chatId).subscribe({
+      next: (members) => this.groupMembers.set(members)
+    });
+  }
+
+  updateGroupName() {
+    const newName = this.groupSettingsName().trim();
+    const chat = this.activeChat();
+    if (!newName || !chat) return;
+
+    this.chatsService.updateGroupName(chat._id, newName).subscribe({
+      next: (updatedChat) => {
+        this.groupSettingsName.set(updatedChat.name || '');
+        this.groupUpdated.emit(updatedChat);
+        alert('שם הקבוצה עודכן בהצלחה!');
+      }
+    });
+  }
+
+  updateGroupDescription() {
+    const desc = this.groupSettingsDesc().trim();
+    const chat = this.activeChat();
+    if (!chat) return;
+
+    this.chatsService.updateGroupDescription(chat._id, desc).subscribe({
+      next: (updatedChat) => {
+        this.groupSettingsDesc.set(updatedChat.description || '');
+        this.groupUpdated.emit(updatedChat);
+        alert('תיאור הקבוצה עודכן בהצלחה!');
+      }
+    });
+  }
+
+  addMemberToGroup() {
+    const username = this.newGroupMemberUsername().trim();
+    const chat = this.activeChat();
+    if (!username || !chat) return;
+
+    this.chatsService.addMemberToGroup(chat._id, username).subscribe({
+      next: (updatedChat) => {
+        this.loadGroupMembers(chat._id);
+        this.newGroupMemberUsername.set('');
+        this.groupUpdated.emit(updatedChat);
+        alert(`המשתמש ${username} צורף בהצלחה!`);
+      },
+      error: (err) => {
+        alert(err.error?.message || 'הוספת המשתמש נכשלה');
+      }
+    });
+  }
+
+  removeMemberFromGroup(username: string) {
+    const chat = this.activeChat();
+    if (!username || !chat) return;
+
+    if (confirm(`האם אתה בטוח שברצונך להסיר את ${username} מהקבוצה?`)) {
+      this.chatsService.removeMemberFromGroup(chat._id, username).subscribe({
+        next: (updatedChat) => {
+          this.loadGroupMembers(chat._id);
+          this.groupUpdated.emit(updatedChat);
+          alert(`המשתמש ${username} הוסר מהקבוצה.`);
+        },
+        error: (err) => {
+          alert(err.error?.message || 'הסרת המשתמש נכשלה');
+        }
+      });
+    }
+  }
+}

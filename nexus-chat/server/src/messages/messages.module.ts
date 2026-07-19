@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MessagesController } from './messages.controller';
 import { MessagesService } from './messages.service';
+import { MessagesGateway } from './message.gateway';
 import { Message, MessageSchema } from './schemas/message.schema';
 import { Chat, ChatSchema } from '../chats/schemas/chat.schema';
-import { User, UserSchema } from '../users/schemas/user.schema'; // ייבוא סכמת המשתמשים!
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
-    // רישום כל 3 הסכמות הדרושות לסרוויס של ההודעות!
     MongooseModule.forFeature([
       { name: Message.name, schema: MessageSchema },
       { name: Chat.name, schema: ChatSchema },
@@ -16,7 +16,6 @@ import { User, UserSchema } from '../users/schemas/user.schema'; // ייבוא �
     ])
   ],
   controllers: [MessagesController],
-  providers: [MessagesService],
-  exports: [MessagesService]
+  providers: [MessagesService, MessagesGateway],
 })
 export class MessagesModule {}

@@ -61,4 +61,13 @@ export class ChatsController {
   ) {
     return this.chatsService.removeMemberFromGroup(userId, chatId, targetUsername);
   }
+
+  // 🚀 ראוט לקבלת או יצירת שיחה פרטית - מבוסס על Header בלבד, ללא Guards!
+  @Get('private/:username')
+  getOrCreatePrivateChat(
+    @Headers('x-user-id') userId: string,
+    @Param('username') username: string
+  ) {
+    return this.chatsService.findOrCreatePrivateChat(userId, username);
+  }
 }
