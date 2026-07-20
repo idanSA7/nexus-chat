@@ -150,14 +150,12 @@ export class ChatsService {
     const myUserIdObj = new Types.ObjectId(myUserId);
     const targetUserIdObj = targetUser._id as Types.ObjectId;
 
-    // מחפשים שיחה פרטית שבה שנינו חברים
     let chat = await this.chatModel.findOne({
       type: 'private',
       members: { $all: [myUserIdObj, targetUserIdObj] }
     });
 
     if (!chat) {
-      // אם לא קיימת שיחה - יוצרים אחת חדשה ואמיתית ב-Database!
       chat = await new this.chatModel({
         type: 'private',
         members: [myUserIdObj, targetUserIdObj]

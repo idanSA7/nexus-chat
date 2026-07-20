@@ -1,0 +1,37 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border-t-4 border-[#00a884] animate-fade-in">
+    
+    <!-- כותרת המודאל -->
+    <div class="flex justify-between items-center mb-6 border-b pb-3">
+      <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#00a884]">person_add</span>
+        הוספת חבר חדש
+      </h3>
+      <button (click)="close.emit()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- טופס הוספת חבר ישירה -->
+    <div class="space-y-4">
+      <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">חפש שם משתמש</label>
+      <div class="flex gap-2">
+        <input 
+          type="text" 
+          [(ngModel)]="friendRequestUsername"
+          class="flex-grow px-4 py-2.5 bg-[#f8f9fa] border border-gray-200 rounded-xl focus:border-[#00a884] focus:bg-white focus:ring-2 focus:ring-[#00a884]/20 transition-all outline-none text-gray-700 font-medium"
+          placeholder="הקלד שם משתמש מדויק"
+        />
+        <button 
+          (click)="addFriend()"
+          [disabled]="!friendRequestUsername().trim()"
+          class="bg-[#00a884] text-white font-bold px-5 py-2.5 rounded-xl hover:bg-[#008f6c] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+        >
+          <span>הוסף</span>
+          <span class="material-symbols-outlined text-sm">person_add</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

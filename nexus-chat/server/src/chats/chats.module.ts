@@ -7,7 +7,6 @@ import { User, UserSchema } from '../users/schemas/user.schema'; // ייבוא �
 
 @Module({
   imports: [
-    // רישום שתי הסכמות בתוך המודול הנוכחי כדי ש-ChatsService יוכל להשתמש בהן
     MongooseModule.forFeature([
       { name: Chat.name, schema: ChatSchema },
       { name: User.name, schema: UserSchema }

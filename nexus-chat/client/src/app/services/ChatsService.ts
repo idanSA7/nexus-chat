@@ -33,7 +33,6 @@ export class ChatsService {
     return this.http.patch(`${this.apiUrl}/${chatId}/remove-member`, { username });
   }
 
-  // 🚀 פונקציה חדשה בקליינט לקבלת או יצירת שיחה פרטית אמיתית מהשרת!
   getOrCreatePrivateChat(targetUsername: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/private/${targetUsername}`);
   }

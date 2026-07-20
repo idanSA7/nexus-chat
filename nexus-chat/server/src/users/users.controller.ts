@@ -17,8 +17,28 @@ export class UsersController {
   login(@Body() loginDto: LoginDto) {
     return this.usersService.login(loginDto);
   }
+  @Post('friendRequest')
+  friendRequest(
+    @Headers('x-user-id') userId: string, 
+    @Body() friendRequest: FriendRequestDto
+  ) {
+    return this.usersService.addFriendDirectly(userId, friendRequest.targetUsername);
+  }
+  
+  @Delete('deleteFriend')
+  deleteFriend(
+    @Headers('x-user-id') userId: string,
+    @Body() deleteFriend: FriendRequestDto
+  ) {
+    return this.usersService.deleteFriend(userId, deleteFriend.targetUsername);
+  }
 
-  //  קוראים את מזהה השולח ישירות מה-Header 'x-user-id' ללא Guards!
+  @Get('friends')
+  getFriends(@Headers('x-user-id') userId: string) {
+    return this.usersService.getFriends(userId);
+  }
+
+/*
   @Post('friendRequest')
   friendRequest(
     @Headers('x-user-id') userId: string, 
@@ -27,15 +47,12 @@ export class UsersController {
     return this.usersService.sendFriendRequest(userId, friendRequest.targetUsername);
   }
 
-  @Delete('deleteFriend')
-  deleteFriend(
-    @Headers('x-user-id') userId: string,
-    @Body() deleteFriend: FriendRequestDto
-  ) {
-    return this.usersService.deleteFriend(userId, deleteFriend.targetUsername);
-  }
   
-
+   @Get('friendRequests/pending')
+  getPendingRequests(@Headers('x-user-id') userId: string) {
+    return this.usersService.getPendingRequests(userId);
+  }
+/*
   @Patch('acceptFriend')
   acceptFriend(
     @Headers('x-user-id') userId: string,
@@ -43,13 +60,7 @@ export class UsersController {
   ) {
     return this.usersService.acceptFriendRequest(userId, acceptFriend.targetUsername);
   }
+    */
 
-  @Get('friends')
-  getFriends(@Headers('x-user-id') userId: string) {
-    return this.usersService.getFriends(userId);
-  }
-  @Get('friendRequests/pending')
-  getPendingRequests(@Headers('x-user-id') userId: string) {
-    return this.usersService.getPendingRequests(userId);
-  }
+ 
 }

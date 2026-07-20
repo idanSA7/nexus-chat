@@ -1,0 +1,25 @@
+:host {
+  display: block;
+  height: 100vh;
+  direction: rtl; /* מבטיח שכל ממשק הצ'אט יעבוד מימין לשמאל בצורה אחידה */
+  font-family: 'Assistant', sans-serif;
+}
+
+/* עיצוב פס גלילה (Scrollbar) עדין ומודרני לרשימת הצ'אטים וחלון ההודעות */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+}

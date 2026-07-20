@@ -44,8 +44,7 @@ export class UsersService {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password!);
-    if (!isPasswordValid) {                                                    // מה הבדיקה הזאת בודקת, איפה משיגים את הדי טי או שהפונקציה מקבלת, ומה זה הקובץ הזה ברטרן איך מחזירים 3 משתנים ולא רק אחד
-      throw new UnauthorizedException('Invalid credentials');
+    if (!isPasswordValid) {                                                    
     }
 
     return { 
@@ -101,21 +100,61 @@ export class UsersService {
     return { message: `Friendship with ${targetUsername} deleted successfully` };
   }
 
+  async addFriendDirectly(senderId: string, targetUsername: string) {
+    const receiver = await this.userModel.findOne({ username: targetUsername });
+    if (!receiver) {
+      throw new ConflictException('User not found');
+    }
+
+    if (receiver._id.toString() === senderId) {
+      throw new ConflictException('You cannot add yourself as a friend');
+    }
+
+    const senderObjectId = new Types.ObjectId(senderId);
+    const receiverObjectId = receiver._id as Types.ObjectId;
+
+    const existingFriendship = await this.friendshipModel.findOne({
+      $or: [
+        { sendingUser: senderObjectId, receivingUser: receiverObjectId },
+        { sendingUser: receiverObjectId, receivingUser: senderObjectId }
+      ]
+    });
+
+    if (existingFriendship) {
+      throw new ConflictException('You are already friends with this user');
+    }
+
+    
+    const newFriendship = new this.friendshipModel({
+      sendingUser: senderObjectId,
+      receivingUser: receiverObjectId,
+      status: 'accepted' 
+    });
+
+    try {
+      await newFriendship.save();
+      return { message: `You are now friends with ${targetUsername}` };
+    } catch (error: any) {
+      if (error.code === 11000) {
+        throw new ConflictException('Friendship already exists');
+      }
+      throw error;
+    }
+  }
+/*
   async acceptFriendRequest(myUserId: string, targetUsername: string) {
     console.log('=== תחילת בדיקת אישור חברות ===');
     console.log('1. המשתמש המחובר ב-Header (מי שאמור לאשר):', myUserId);
     console.log('2. ה-targetUsername שהתקבל ב-Body:', targetUsername);
 
-    // 1. מוצאים את המשתמש ששלח את הבקשה לפי ה-Username שלו
     const targetUser = await this.userModel.findOne({ username: targetUsername });
     if (!targetUser) {
-      console.log('❌ שגיאה: לא נמצא משתמש ב-DB עם השם:', targetUsername);
+      console.log(' שגיאה: לא נמצא משתמש ב-DB עם השם:', targetUsername);
       throw new ConflictException('User not found');
     }
 
     console.log('3. המשתמש ששלח את הבקשה נמצא ב-DB. ה-ID שלו הוא:', targetUser._id.toString());
 
-    // 2. הגדרת המזהים בכל הפורמטים האפשריים כדי להדפיס ולבדוק
     const targetUserObjectId = new Types.ObjectId(targetUser.id);
     const myUserObjectId = new Types.ObjectId(myUserId);
 
@@ -124,7 +163,6 @@ export class UsersService {
     console.log(`sendingUser (ObjectId): ${targetUserObjectId}`);
     console.log(`receivingUser (ObjectId): ${myUserObjectId}`);
 
-    // 3. ניסיון חיפוש גמיש במיוחד (גם כאובייקטים וגם כמחרוזות)
     const pendingRequest = await this.friendshipModel.findOne({
       status: 'pending',
       $or: [
@@ -134,19 +172,19 @@ export class UsersService {
     });
 
     if (!pendingRequest) {
-      console.log('❌ שגיאה: מונגו לא מצא שום רשומה מתאימה בטבלת friendships!');
+      console.log(' שגיאה: מונגו לא מצא שום רשומה מתאימה בטבלת friendships!');
       console.log('=== סוף בדיקת אישור חברות ===');
       throw new ConflictException('No pending friend request found between users');
     }
 
-    console.log('✅ הצלחה! הבקשה נמצאה. מעדכן ל-accepted...');
+    console.log(' הצלחה! הבקשה נמצאה. מעדכן ל-accepted...');
     pendingRequest.status = 'accepted';
     await pendingRequest.save();
 
     console.log('=== סוף בדיקת אישור חברות ===');
     return { message: `Friend request from ${targetUsername} accepted successfully` };
   }
-
+*/
   async getFriends(myUserId: string) {
     const myUserObjectId = new Types.ObjectId(myUserId);
     const friendships = await this.friendshipModel

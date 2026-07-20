@@ -12,7 +12,7 @@ import { AuthModule } from '../auth/auth.module'; // מייבאים את מוד�
             { name: User.name, schema: UserSchema },
             { name: Friendship.name, schema: FriendshipSchema }
         ]),
-        AuthModule // יבוא ישיר וקישור נקי, בלי forwardRef!
+        AuthModule // לא רלוונטי
     ],
     controllers: [UsersController],
     providers: [UsersService],

@@ -24,7 +24,6 @@ async handleSendMessage(
   @ConnectedSocket() client: Socket,
   @MessageBody() createMessageDto: CreateMessageDto
 ) {
-  // כאן אנחנו מחלצים את ה-ID מה-Header של ה-Handshake של ה-Socket!
   const myUserId = client.handshake.headers['x-user-id'] as string;
 
   if (!myUserId) {

@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { ChatsService } from '../../services/chats';
+import { ChatsService } from '../../services/ChatsService';
 import { MessagesService } from '../../services/MessagesService';
 import { WebsocketService } from '../../services/websocket.service'; 
 
-import { AddFriendComponent } from './modals/add-friend.component';
-import { CreateGroupComponent } from './modals/create-group.component';
-import { GroupSettingsComponent } from './modals/group-settings.component';
+import { AddFriendComponent } from './modals/add-friend.component/add-friend.component';
+import { CreateGroupComponent } from './modals/create-group.component/create-group.component';
+import { GroupSettingsComponent } from './modals/group-settings.component/group-settings.component';
 
 @Component({
   selector: 'app-chat',
@@ -28,7 +28,7 @@ export class ChatComponent implements OnInit {
   private authService = inject(AuthService);
   private chatsService = inject(ChatsService);
   private messagesService = inject(MessagesService);
-  private websocketService = inject(WebsocketService); 
+  //private websocketService = inject(WebsocketService); 
   private router = inject(Router);
 
   currentUserId = signal<string>('');
@@ -39,7 +39,7 @@ export class ChatComponent implements OnInit {
   messages = signal<any[]>([]); 
 
   searchQuery = '';
-  activeFilter = signal<'all' | 'groups' | 'friends'>('all');
+  activeFilter = signal<'all' | 'groups' | 'friends'>('all');///////////////////
 
   loadingChats = signal<boolean>(false);
   loadingMessages = signal<boolean>(false);
@@ -60,8 +60,8 @@ export class ChatComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
-    const id = localStorage.getItem('userId');
+  ngOnInit() {////////////
+    const id = localStorage.getItem('userId');///
     const name = localStorage.getItem('username');
 
     if (!id || !name) {
@@ -74,20 +74,33 @@ export class ChatComponent implements OnInit {
 
     this.loadFriendsAndGroups();
 
-    // 🚀 האוזנייה הקבועה שלנו! בכל פעם שהשרת משדר הודעה חדשה, אנחנו דוחפים אותה למסך בשבריר שנייה!
+    
+///////////////////////////////////////////////////////////////////////////////////////
+    setInterval(() => {
+      const chat = this.activeChat();
+      if (chat && chat._id) {
+        this.messagesService.getChatMessages(chat._id).subscribe({
+          next: (msgList) => {
+            if (msgList.length !== this.messages().length) {
+              this.messages.set(msgList);
+            }
+          }
+        });
+      }
+    }, 3000);
+    /* 
     this.websocketService.listen('messageReceived').subscribe({
       next: (newMsg) => {
         const chat = this.activeChat();
-        // מוודאים שההודעה שייכת לצ'אט שפתוח אצלנו כרגע על המסך
         if (chat && newMsg.receivingChat === chat._id) {
           this.messages.update(prev => {
-            // מונעים כפילויות תצוגה
             if (prev.some(m => m._id === newMsg._id)) return prev;
             return [...prev, newMsg];
           });
         }
       }
     });
+    */
   }
 
   loadFriendsAndGroups() {
@@ -141,12 +154,11 @@ export class ChatComponent implements OnInit {
     return name.substring(0, 2).toUpperCase();
   }
 
-  // 💬 בחירת צ'אט והפיכתו לפעיל
+  // chat turn on 
   selectConversation(item: any) {
     if (item.type === 'group') {
       this.activeChat.set(item);
     } else {
-      // 🚀 במקום ID מדומה - פונים לשרת שימצא או יצור שיחה אמיתית במונגו!
       this.chatsService.getOrCreatePrivateChat(item.username).subscribe({
         next: (realChat) => {
           this.activeChat.set(realChat);
@@ -158,7 +170,7 @@ export class ChatComponent implements OnInit {
     }
   }
 
-  // 📜 שליפת הודעות של צ'אט ספציפי
+  // get messages from chat
   loadMessages(chatId: string) {
     this.loadingMessages.set(true);
     this.messagesService.getChatMessages(chatId).subscribe({
@@ -173,7 +185,7 @@ export class ChatComponent implements OnInit {
     });
   }
 
-  // ✉️ שליחת הודעה חדשה
+  // send new message
   sendMessage() {
     const text = this.newMessageText().trim();
     const chat = this.activeChat();

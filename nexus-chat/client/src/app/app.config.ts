@@ -8,7 +8,6 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection(), 
     provideRouter(routes),
-    // 🚀 מפעילים את ה-HttpClient יחד עם הצינור שמצמיד את מזהה המשתמש לכל פנייה!
     provideHttpClient(withInterceptors([authInterceptor])) 
   ]
 };

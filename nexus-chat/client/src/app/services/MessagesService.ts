@@ -9,7 +9,6 @@ export class MessagesService {
   private readonly apiUrl = 'http://localhost:3000/messages';
   private http = inject(HttpClient);
 
-  // ✉️ שליחת הודעה חדשה
   sendMessage(chatId: string, content: string): Observable<any> {
     return this.http.post(this.apiUrl, { chatId, content });
   }
