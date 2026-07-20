@@ -72,10 +72,7 @@ export class ChatComponent implements OnInit {
     this.currentUserId.set(id);
     this.currentUsername.set(name);
 
-    this.loadFriendsAndGroups();
-
-    
-///////////////////////////////////////////////////////////////////////////////////////
+    this.loadFriendsAndGroups(); 
     setInterval(() => {
       const chat = this.activeChat();
       if (chat && chat._id) {
@@ -105,20 +102,28 @@ export class ChatComponent implements OnInit {
 
   loadFriendsAndGroups() {
     this.loadingChats.set(true);
+
     this.authService.getFriends().subscribe({
-      next: (friendsList) => {
+      next: (friendsList: any[]) => {
         this.friends.set(friendsList);
-        
-        const savedChats = localStorage.getItem(`chats_${this.currentUserId()}`);
-        const groupChats = savedChats ? JSON.parse(savedChats) : [];
-        
-        const allChats = [
-          ...groupChats,
-          ...friendsList.map(f => ({ ...f, type: 'private', username: f.username, _id: f._id }))
-        ];
-        
-        this.chats.set(allChats);
-        this.loadingChats.set(false);
+
+        this.chatsService.getGroups().subscribe({
+          next: (groupChats: any[]) => {
+            
+            const allChats = [
+              ...groupChats.map((g: any) => ({ ...g, type: 'group' })),
+              ...friendsList.map((f: any) => ({ ...f, type: 'private'}))
+            ];
+
+            this.chats.set(allChats);
+            this.loadingChats.set(false);
+          },
+          error: () => {
+            const privateChats = friendsList.map((f: any) => ({ ...f, type: 'private', username: f.username, _id: f._id }));
+            this.chats.set(privateChats);
+            this.loadingChats.set(false);
+          }
+        });
       },
       error: () => {
         this.loadingChats.set(false);
@@ -202,27 +207,17 @@ export class ChatComponent implements OnInit {
     });
   }
 
-  saveGroupToLocal(group: any) {
-    const key = `chats_${this.currentUserId()}`;
-    const saved = localStorage.getItem(key);
-    const list = saved ? JSON.parse(saved) : [];
-    
-    if (!list.some((c: any) => c._id === group._id)) {
-      list.push({ ...group, type: 'group' });
-      localStorage.setItem(key, JSON.stringify(list));
-      this.chats.set([...list, ...this.friends().map(f => ({ ...f, type: 'private' }))]);
-    }
-  }
+  
 
   onGroupCreated(createdGroup: any) {
-    this.saveGroupToLocal(createdGroup);
     this.showCreateGroup.set(false);
-    this.selectConversation(createdGroup);
+    this.loadFriendsAndGroups(); 
+    this.selectConversation({ ...createdGroup, type: 'group' });
   }
 
   onGroupUpdated(updatedGroup: any) {
     this.activeChat.set(updatedGroup);
-    this.saveGroupToLocal(updatedGroup);
+    this.loadFriendsAndGroups(); 
   }
 
   deleteFriend(event: Event, username: string) {

@@ -1,6 +1,6 @@
 <div class="h-screen w-screen flex bg-[#f0f2f5] overflow-hidden font-sans" style="direction: rtl;">
   
-  <!-- 🟢 צד שמאל: רשימת השיחות ופילטרים -->
+  <!--  צד שמאל: רשימת השיחות ופילטרים -->
   <aside class="w-[380px] h-full bg-white border-l border-gray-200 flex flex-col z-10 flex-shrink-0">
     
     <!-- פרופיל עליון + כפתורי ניהול בסגנון וואטסאפ -->
@@ -81,7 +81,7 @@
           <div 
             (click)="selectConversation(item)"
             [ngClass]="activeChat()?._id === item._id || (activeChat()?.type === 'private' && activeChat()?.username === item.username) ? 'bg-[#f0f2f5]' : 'hover:bg-gray-50'"
-            class="flex items-center justify-between p-3.5 cursor-pointer transition-colors relative"
+            class="group flex items-center justify-between p-3.5 cursor-pointer transition-colors relative"
           >
             <div class="flex items-center gap-3 min-w-0">
               <div 
@@ -98,14 +98,14 @@
               </div>
             </div>
 
-            <!-- לחצן מחיקת חבר (מופיע רק בפילטר חברים ורק בשיחה פרטית) -->
+            <!-- לחצן מחיקת חבר - מופיע בשיחות פרטיות בעת ריחוף העכבר -->
             @if (item.type !== 'group') {
               <button 
                 (click)="deleteFriend($event, item.username)"
-                class="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 transition-colors opacity-0 hover:opacity-100 md:group-hover:opacity-100"
+                class="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
                 title="מחק איש קשר"
               >
-                <span class="material-symbols-outlined text-base">delete</span>
+                <span class="material-symbols-outlined text-lg">delete</span>
               </button>
             }
           </div>
@@ -119,7 +119,7 @@
     </div>
   </aside>
 
-  <!-- 🔵 צד ימין: מסך הצ'אט והודעות -->
+  <!--  צד ימין: מסך הצ'אט והודעות -->
   <main class="flex-grow h-full bg-[#efeae2] flex flex-col relative">
     
     @if (activeChat()) {
@@ -230,7 +230,7 @@
   </main>
 </div>
 
-<!-- 🚪 שימוש במודאלים העצמאיים החדשים בצורה אלגנטית ומאובטחת -->
+<!--  שימוש במודאלים העצמאיים החדשים בצורה אלגנטית ומאובטחת -->
 @if (showAddFriend()) {
   <app-add-friend-modal 
     (close)="showAddFriend.set(false)" 

@@ -36,4 +36,7 @@ export class ChatsService {
   getOrCreatePrivateChat(targetUsername: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/private/${targetUsername}`);
   }
+  getGroups(): Observable<any[]> {
+  return this.http.get<any[]>(`${this.apiUrl}/groups`); 
+}
 }

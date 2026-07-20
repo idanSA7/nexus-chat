@@ -6,6 +6,11 @@ import { CreateChatDto } from '../dto/createchat.dto';
 export class ChatsController {
   constructor(private readonly chatsService: ChatsService) {}
 
+  @Get('groups')
+  getMyGroups(@Headers('x-user-id') userId: string) {
+    return this.chatsService.getUserGroups(userId);
+  }
+
   @Post('group')
   createGroupChat(
     @Headers('x-user-id') userId: string,

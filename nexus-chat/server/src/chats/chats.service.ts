@@ -36,6 +36,12 @@ export class ChatsService {
     const savedGroup = await newGroup.save();
     return savedGroup.populate('members', 'username');
   }
+  async getUserGroups(myUserId: string) {
+  return this.chatModel.find({
+    type: 'group',
+    members: new Types.ObjectId(myUserId)
+  }).populate('members', 'username');
+}
 
   async updateGroupName(myUserId: string, chatId: string, newName: string) {
     if (!Types.ObjectId.isValid(chatId)) {
