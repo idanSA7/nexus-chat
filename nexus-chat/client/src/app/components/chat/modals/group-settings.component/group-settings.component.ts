@@ -13,10 +13,10 @@ import { ChatsService } from '../../../../services/ChatsService';
 export class GroupSettingsComponent implements OnInit {
   private chatsService = inject(ChatsService);
 
-  activeChat = input<any>(null);// בהמשך אני אצור ממשק של מה מקבלים
+  activeChat = input<any>(null);// לא להשאיר ANY
   currentUsername = input<string>(''); 
 
-  groupMembers = signal<any[]>([]);// בהמשך אני אצור ממשק של מה מקבלים
+  groupMembers = signal<any[]>([]);// לא להשאיר ANY
   groupSettingsName = signal<string>('');
   groupSettingsDesc = signal<string>('');
   newGroupMemberUsername = signal<string>('');
