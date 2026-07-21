@@ -1,6 +1,12 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { 
+  Injectable, 
+  ConflictException, 
+  UnauthorizedException, 
+  NotFoundException, 
+  BadRequestException 
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, mongo } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User } from './schemas/user.schema';
 import { Friendship } from './schemas/friendship.schema';
@@ -27,8 +33,8 @@ export class UsersService {
 
     try {
       return await newUser.save();
-    } catch (error: any) {
-      if (error.code === 11000) {
+    } catch (error) {
+      if (error instanceof mongo.MongoError && error.code === 11000) {
         throw new ConflictException('Username already exists');
       }
       throw error;
@@ -44,7 +50,8 @@ export class UsersService {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password!);
-    if (!isPasswordValid) {                                                    
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     return { 
@@ -57,11 +64,11 @@ export class UsersService {
   async sendFriendRequest(senderId: string, targetUsername: string) {
     const receiver = await this.userModel.findOne({ username: targetUsername });
     if (!receiver) {
-      throw new ConflictException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     if (receiver._id.toString() === senderId) {
-      throw new ConflictException('You cannot send a friend request to yourself');
+      throw new BadRequestException('You cannot send a friend request to yourself');
     }
 
     const newRequest = new this.friendshipModel({
@@ -72,8 +79,8 @@ export class UsersService {
 
     try {
       return await newRequest.save();
-    } catch (error: any) {
-      if (error.code === 11000) {
+    } catch (error) {
+      if (error instanceof mongo.MongoError && error.code === 11000) {
         throw new ConflictException('Friend request already exists');
       }
       throw error;
@@ -83,7 +90,7 @@ export class UsersService {
   async deleteFriend(senderId: string, targetUsername: string) {
     const targetUser = await this.userModel.findOne({ username: targetUsername });
     if (!targetUser) {
-      throw new ConflictException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     const deletedFriendship = await this.friendshipModel.findOneAndDelete({
@@ -94,7 +101,7 @@ export class UsersService {
     });
 
     if (!deletedFriendship) {
-      throw new ConflictException('Friendship connection does not exist');
+      throw new NotFoundException('Friendship connection does not exist');
     }
 
     return { message: `Friendship with ${targetUsername} deleted successfully` };
@@ -103,11 +110,11 @@ export class UsersService {
   async addFriendDirectly(senderId: string, targetUsername: string) {
     const receiver = await this.userModel.findOne({ username: targetUsername });
     if (!receiver) {
-      throw new ConflictException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     if (receiver._id.toString() === senderId) {
-      throw new ConflictException('You cannot add yourself as a friend');
+      throw new BadRequestException('You cannot add yourself as a friend');
     }
 
     const senderObjectId = new Types.ObjectId(senderId);
@@ -124,7 +131,6 @@ export class UsersService {
       throw new ConflictException('You are already friends with this user');
     }
 
-    
     const newFriendship = new this.friendshipModel({
       sendingUser: senderObjectId,
       receivingUser: receiverObjectId,
@@ -134,57 +140,14 @@ export class UsersService {
     try {
       await newFriendship.save();
       return { message: `You are now friends with ${targetUsername}` };
-    } catch (error: any) {
-      if (error.code === 11000) {
+    } catch (error) {
+      if (error instanceof mongo.MongoError && error.code === 11000) {
         throw new ConflictException('Friendship already exists');
       }
       throw error;
     }
   }
-/*
-  async acceptFriendRequest(myUserId: string, targetUsername: string) {
-    console.log('=== תחילת בדיקת אישור חברות ===');
-    console.log('1. המשתמש המחובר ב-Header (מי שאמור לאשר):', myUserId);
-    console.log('2. ה-targetUsername שהתקבל ב-Body:', targetUsername);
 
-    const targetUser = await this.userModel.findOne({ username: targetUsername });
-    if (!targetUser) {
-      console.log(' שגיאה: לא נמצא משתמש ב-DB עם השם:', targetUsername);
-      throw new ConflictException('User not found');
-    }
-
-    console.log('3. המשתמש ששלח את הבקשה נמצא ב-DB. ה-ID שלו הוא:', targetUser._id.toString());
-
-    const targetUserObjectId = new Types.ObjectId(targetUser.id);
-    const myUserObjectId = new Types.ObjectId(myUserId);
-
-    console.log('4. מריץ שאילתה במונגו עם הערכים הבאים:');
-    console.log(`סטטוס: pending`);
-    console.log(`sendingUser (ObjectId): ${targetUserObjectId}`);
-    console.log(`receivingUser (ObjectId): ${myUserObjectId}`);
-
-    const pendingRequest = await this.friendshipModel.findOne({
-      status: 'pending',
-      $or: [
-        { sendingUser: targetUserObjectId, receivingUser: myUserObjectId },
-        { sendingUser: targetUser.id, receivingUser: myUserId }
-      ]
-    });
-
-    if (!pendingRequest) {
-      console.log(' שגיאה: מונגו לא מצא שום רשומה מתאימה בטבלת friendships!');
-      console.log('=== סוף בדיקת אישור חברות ===');
-      throw new ConflictException('No pending friend request found between users');
-    }
-
-    console.log(' הצלחה! הבקשה נמצאה. מעדכן ל-accepted...');
-    pendingRequest.status = 'accepted';
-    await pendingRequest.save();
-
-    console.log('=== סוף בדיקת אישור חברות ===');
-    return { message: `Friend request from ${targetUsername} accepted successfully` };
-  }
-*/
   async getFriends(myUserId: string) {
     const myUserObjectId = new Types.ObjectId(myUserId);
     const friendships = await this.friendshipModel
@@ -195,28 +158,23 @@ export class UsersService {
           { sendingUser: myUserObjectId }
         ]
       })
-      .populate('sendingUser receivingUser');
+      .populate<{ sendingUser: User & { _id: Types.ObjectId }; receivingUser: User & { _id: Types.ObjectId } }>('sendingUser receivingUser');
 
     return friendships.map(friendship => {
-      const sender = friendship.sendingUser ;
-      const receiver = friendship.receivingUser ;
+      const sender = friendship.sendingUser;
+      const receiver = friendship.receivingUser;
       return sender._id.toString() === myUserId ? receiver : sender;
     });
   }
 
- 
   async getPendingRequests(myUserId: string) {
     return this.friendshipModel
       .find({
         $or: [
-          { receivingUser: myUserId },
-          { recivingUser: myUserId }
+          { receivingUser: myUserId }
         ],
         status: 'pending'
-      } )
+      })
       .populate('sendingUser', 'username');
-
-  } 
-
-
+  }
 }

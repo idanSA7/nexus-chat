@@ -1,10 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
-
-import { AuthService } from '../../services/auth.service';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 
+import { AuthService, AuthDto } from '../../services/auth.service';
+import { AuthResponse } from '../../models/user.model';
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -22,8 +23,8 @@ export class LoginComponent {
   isError = signal<boolean>(false);
 
   authForm = new FormGroup({
-    username: new FormControl('', [Validators.required, Validators.minLength(3)]),
-    password: new FormControl('', [Validators.required, Validators.minLength(6)])
+    username: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] })
   });
 
   changeMode() {
@@ -45,33 +46,42 @@ export class LoginComponent {
     this.isLoading.set(true);
     this.alertMessage.set('');
 
-    const formValues = this.authForm.value;
-    const authObservable = this.isRegisterMode()
-      ? this.authService.register(formValues)
-      : this.authService.login(formValues);
+    const formValues: AuthDto = this.authForm.getRawValue();
 
-    authObservable.subscribe({
-      next: (response) => {
-        this.isLoading.set(false);
-        this.isError.set(false);
-
-        if (this.isRegisterMode()) {
-          this.alertMessage.set(`נרשמת בהצלחה! מעביר אותך למסך התחברות `);
+    if (this.isRegisterMode()) {
+      this.authService.register(formValues).subscribe({
+        next: () => {
+          this.isLoading.set(false);
+          this.isError.set(false);
+          this.alertMessage.set(`נרשמת בהצלחה! מעביר אותך למסך התחברות`);
           setTimeout(() => this.changeMode(), 2000);
-        } else {
+        },
+        error: (err: HttpErrorResponse) => {
+          this.handleError(err);
+        }
+      });
+    } else {
+      this.authService.login(formValues).subscribe({
+        next: (response: AuthResponse) => {
+          this.isLoading.set(false);
+          this.isError.set(false);
           this.alertMessage.set(`התחברת בהצלחה! נכנס לצ'אט.`);
-          
+
           localStorage.setItem('username', response.username);
           localStorage.setItem('userId', response.userId);
-          
+
           setTimeout(() => this.router.navigate(['/chat']), 1500);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.handleError(err);
         }
-      },
-      error: (err) => {
-        this.isLoading.set(false);
-        this.isError.set(true);
-        this.alertMessage.set(err.error?.message || 'אופס! משהו השתבש בחיבור לשרת.');
-      }
-    });
+      });
+    }
+  }
+
+  private handleError(err: HttpErrorResponse) {
+    this.isLoading.set(false);
+    this.isError.set(true);
+    this.alertMessage.set(err.error?.message || 'אופס! משהו השתבש בחיבור לשרת.');
   }
 }

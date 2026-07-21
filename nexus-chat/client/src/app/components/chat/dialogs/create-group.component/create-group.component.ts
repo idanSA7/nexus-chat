@@ -1,8 +1,11 @@
 import { Component, inject, signal, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChatsService } from '../../../../services/ChatsService';
+import { HttpErrorResponse } from '@angular/common/http';
 
+import { ChatsService } from '../../../../services/ChatsService';
+import { User } from '../../../../models/user.model';
+import { Chat } from '../../../../models/chat.model';
 @Component({
   selector: 'app-create-group-modal',
   standalone: true,
@@ -13,13 +16,13 @@ import { ChatsService } from '../../../../services/ChatsService';
 export class CreateGroupComponent {
   private chatsService = inject(ChatsService);
 
-  friends = input<any[]>([]); // מקבל את רשימת החברים מקומפוננטת האב
+  friends = input<User[]>([]); 
   
   groupName = signal<string>('');
   selectedFriends = signal<string[]>([]);
 
   close = output<void>();
-  groupCreated = output<any>(); // מחזיר לאב את אובייקט הקבוצה החדש שנוצר
+  groupCreated = output<Chat>(); 
 
   toggleFriend(username: string) {
     this.selectedFriends.update(list => {
@@ -38,12 +41,12 @@ export class CreateGroupComponent {
     if (!name || members.length === 0) return;
 
     this.chatsService.createGroup(name, members).subscribe({
-      next: (createdGroup) => {
+      next: (createdGroup: Chat) => {
         this.groupName.set('');
         this.selectedFriends.set([]);
-        this.groupCreated.emit(createdGroup); // שליחת הקבוצה החדשה לאבא לשמירה ולפתיחה
+        this.groupCreated.emit(createdGroup);
       },
-      error: (err) => {
+      error: (err: HttpErrorResponse) => {
         alert(err.error?.message || 'שגיאה ביצירת הקבוצה');
       }
     });

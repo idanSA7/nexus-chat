@@ -1,6 +1,6 @@
 <div class="h-screen w-screen flex bg-[#f0f2f5] overflow-hidden font-sans" style="direction: rtl;">
   
-  <!--  צד שמאל: רשימת השיחות ופילטרים -->
+  <!-- צד שמאל: רשימת השיחות ופילטרים -->
   <aside class="w-[380px] h-full bg-white border-l border-gray-200 flex flex-col z-10 flex-shrink-0">
     
     <!-- פרופיל עליון + כפתורי ניהול בסגנון וואטסאפ -->
@@ -80,28 +80,30 @@
         @for (item of filteredItems(); track item._id) {
           <div 
             (click)="selectConversation(item)"
-            [ngClass]="activeChat()?._id === item._id || (activeChat()?.type === 'private' && activeChat()?.username === item.username) ? 'bg-[#f0f2f5]' : 'hover:bg-gray-50'"
+            [ngClass]="activeChat()?._id === item._id || (activeChat()?.type === 'private' && 'username' in item && activeChat()?.username === item.username) ? 'bg-[#f0f2f5]' : 'hover:bg-gray-50'"
             class="group flex items-center justify-between p-3.5 cursor-pointer transition-colors relative"
           >
             <div class="flex items-center gap-3 min-w-0">
               <div 
-                [ngClass]="item.type === 'group' ? 'bg-[#00a884]/10 text-[#00a884]' : 'bg-[#e3f2fd] text-[#1e88e5]'"
+                [ngClass]="'type' in item && item.type === 'group' ? 'bg-[#00a884]/10 text-[#00a884]' : 'bg-[#e3f2fd] text-[#1e88e5]'"
                 class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0"
               >
                 {{ getAvatarInitials(item) }}
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-sm font-bold text-gray-800 truncate">{{ item.name || item.username }}</span>
+                <span class="text-sm font-bold text-gray-800 truncate">
+                  {{ ('name' in item && item.name) ? item.name : ('username' in item ? item.username : '') }}
+                </span>
                 <span class="text-[11px] text-gray-400 font-medium truncate">
-                  {{ item.type === 'group' ? 'קבוצה' : 'שיחה פרטית' }}
+                  {{ ('type' in item && item.type === 'group') ? 'קבוצה' : 'שיחה פרטית' }}
                 </span>
               </div>
             </div>
 
             <!-- לחצן מחיקת חבר - מופיע בשיחות פרטיות בעת ריחוף העכבר -->
-            @if (item.type !== 'group') {
+            @if (!('type' in item) || item.type !== 'group') {
               <button 
-                (click)="deleteFriend($event, item.username)"
+                (click)="deleteFriend($event, 'username' in item && item.username ? item.username : '')"
                 class="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
                 title="מחק איש קשר"
               >
@@ -119,30 +121,30 @@
     </div>
   </aside>
 
-  <!--  צד ימין: מסך הצ'אט והודעות -->
+  <!-- צד ימין: מסך הצ'אט והודעות -->
   <main class="flex-grow h-full bg-[#efeae2] flex flex-col relative">
     
-    @if (activeChat()) {
+    @if (activeChat(); as chat) {
       <!-- כותרת הצ'אט הפעיל -->
       <header class="h-[60px] bg-[#f0f2f5] px-4 flex items-center justify-between border-b border-gray-200 z-10">
         <div class="flex items-center gap-3">
           <div 
-            [ngClass]="activeChat().type === 'group' ? 'bg-[#00a884]/15 text-[#00a884]' : 'bg-[#e3f2fd] text-[#1e88e5]'"
+            [ngClass]="chat.type === 'group' ? 'bg-[#00a884]/15 text-[#00a884]' : 'bg-[#e3f2fd] text-[#1e88e5]'"
             class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-sm"
           >
-            {{ getAvatarInitials(activeChat()) }}
+            {{ getAvatarInitials(chat) }}
           </div>
           <div class="flex flex-col">
-            <span class="text-sm font-bold text-gray-800">{{ activeChat().name || activeChat().username }}</span>
+            <span class="text-sm font-bold text-gray-800">{{ chat.name || chat.username }}</span>
             <span class="text-[10px] text-gray-400 font-medium">
-              {{ activeChat().type === 'group' ? 'קבוצת שיחה' : 'שיחה מאובטחת' }}
+              {{ chat.type === 'group' ? 'קבוצת שיחה' : 'שיחה מאובטחת' }}
             </span>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
           <!-- כפתור הגדרות קבוצה - מופיע רק אם מדובר בצ'אט קבוצתי -->
-          @if (activeChat().type === 'group') {
+          @if (chat.type === 'group') {
             <button 
               (click)="showGroupSettings.set(true)"
               class="p-2 rounded-full hover:bg-gray-200/70 text-gray-500 transition-colors"
@@ -168,7 +170,7 @@
               class="max-w-[70%] p-3 rounded-2xl shadow-sm text-sm flex flex-col relative transition-all"
             >
               <!-- שם השולח (מופיע רק בקבוצות ואם זה לא אני) -->
-              @if (activeChat().type === 'group' && msg.sendingUser?.username !== currentUsername()) {
+              @if (chat.type === 'group' && msg.sendingUser?.username !== currentUsername()) {
                 <span class="text-[10px] text-[#008f6c] font-bold mb-1">{{ msg.sendingUser?.username }}</span>
               }
               <span class="leading-relaxed break-words font-medium">{{ msg.content }}</span>
@@ -204,7 +206,7 @@
         <button 
           (click)="sendMessage()"
           [disabled]="!newMessageText().trim()"
-          class="bg-[#00a884] hover:bg-[#008f6c] text-white p-3 rounded-full shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+          class="bg-[#00a884] hover:bg-[#008f6c] text-[#ffffff] p-3 rounded-full shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
         >
           <span class="material-symbols-outlined text-lg">send</span>
         </button>
@@ -230,7 +232,7 @@
   </main>
 </div>
 
-<!--  שימוש במודאלים העצמאיים החדשים בצורה אלגנטית ומאובטחת -->
+<!-- שימוש במודאלים העצמאיים החדשים בצורה אלגנטית ומאובטחת -->
 @if (showAddFriend()) {
   <app-add-friend-modal 
     (close)="showAddFriend.set(false)" 

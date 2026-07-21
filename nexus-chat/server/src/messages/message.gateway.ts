@@ -12,38 +12,59 @@ export class MessagesGateway {
   constructor(private readonly messagesService: MessagesService) {}
 
   handleConnection(client: Socket) {
-    console.log(` new customer logged in: ${client.id}`);
+    console.log(` client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(` client disconnected : ${client.id}`);
+    console.log(` client disconnected: ${client.id}`);
+  }
+
+  @SubscribeMessage('joinRoom')
+  handleJoinRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() chatId: string
+  ) {
+    if (chatId) {
+      client.join(chatId);
+      console.log(` Client ${client.id} joined room: ${chatId}`);
+    }
+  }
+
+  @SubscribeMessage('leaveRoom')
+  handleLeaveRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() chatId: string
+  ) {
+    if (chatId) {
+      client.leave(chatId);
+      console.log(` Client ${client.id} left room: ${chatId}`);
+    }
   }
 
   @SubscribeMessage('sendMessage')
-async handleSendMessage(
-  @ConnectedSocket() client: Socket,
-  @MessageBody() createMessageDto: CreateMessageDto
-) {
-  const myUserId = client.handshake.headers['x-user-id'] as string;
+  async handleSendMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() createMessageDto: CreateMessageDto
+  ) {
+    const myUserId = client.handshake.headers['x-user-id'] as string;
 
-  if (!myUserId) {
-    console.error(' הודעה נשלחה ללא זיהוי משתמש (No Header)!');
-    return;
+    if (!myUserId) {
+      console.error(' הודעה נשלחה ללא זיהוי משתמש (No Header)!');
+      return;
+    }
+
+    try {
+      const savedMessage = await this.messagesService.createMessage(
+       myUserId, 
+       createMessageDto.chatId, 
+       createMessageDto.content
+);
+
+      const chatId = savedMessage.receivingChat.toString();
+      this.server.to(chatId).emit('messageReceived', savedMessage);
+      
+    } catch (error) {
+      console.error(' שגיאה בשמירת הודעה דרך הווב-סוקט:', error);
+    }
   }
-
-  console.log('✉️ התקבלה הודעה חדשה בווב-סוקט של השרת:', createMessageDto);
-
-  try {
-    const savedMessage = await this.messagesService.createMessage(
-      myUserId, 
-      createMessageDto.chatId,
-      createMessageDto.content
-    );
-
-    this.server.emit('messageReceived', savedMessage);
-    
-  } catch (error) {
-    console.error('שגיאה בשמירת הודעה דרך הווב-סוקט:', error);
-  }
-}
 }

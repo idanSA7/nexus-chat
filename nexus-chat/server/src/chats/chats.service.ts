@@ -36,12 +36,13 @@ export class ChatsService {
     const savedGroup = await newGroup.save();
     return savedGroup.populate('members', 'username');
   }
+
   async getUserGroups(myUserId: string) {
-  return this.chatModel.find({
-    type: 'group',
-    members: new Types.ObjectId(myUserId)
-  }).populate('members', 'username');
-}
+    return this.chatModel.find({
+      type: 'group',
+      members: new Types.ObjectId(myUserId)
+    }).populate('members', 'username');
+  }
 
   async updateGroupName(myUserId: string, chatId: string, newName: string) {
     if (!Types.ObjectId.isValid(chatId)) {
@@ -139,15 +140,12 @@ export class ChatsService {
       throw new ConflictException(`User '${targetUsername}' is already in this group`);
     }
 
-    chat.members!.push(targetUser._id as any);
+    chat.members!.push(targetUser._id as Types.ObjectId);
     const updatedChat = await chat.save();
     return updatedChat.populate('members', 'username');
   }
 
-
-
-
- async findOrCreatePrivateChat(myUserId: string, targetUsername: string) {
+  async findOrCreatePrivateChat(myUserId: string, targetUsername: string) {
     const targetUser = await this.userModel.findOne({ username: targetUsername });
     if (!targetUser) {
       throw new NotFoundException('Target user not found');
@@ -200,7 +198,7 @@ export class ChatsService {
       throw new ConflictException(`User '${targetUsername}' is not in this group`);
     }
 
-    (chat.members as any).pull(targetUser._id);
+    (chat.members as Types.Array<Types.ObjectId>).pull(targetUser._id);
     const updatedChat = await chat.save();
     return updatedChat.populate('members', 'username');
   }

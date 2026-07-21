@@ -9,16 +9,22 @@ export class WebsocketService {
   private socket: Socket;
 
   constructor() {
-    this.socket = io('http://localhost:3000');
+    const userId = localStorage.getItem('userId') || '';
+
+    this.socket = io('http://localhost:3000', {
+      extraHeaders: {
+        'x-user-id': userId
+      }
+    });
   }
 
-  emit(eventName: string, data: any) {
+  emit(eventName: string, data: unknown): void {
     this.socket.emit(eventName, data);
   }
 
-  listen(eventName: string): Observable<any> {
+  listen<T>(eventName: string): Observable<T> {
     return new Observable((subscriber) => {
-      this.socket.on(eventName, (data: any) => {
+      this.socket.on(eventName, (data: T) => {
         subscriber.next(data);
       });
     });
