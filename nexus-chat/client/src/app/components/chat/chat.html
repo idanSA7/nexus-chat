@@ -165,19 +165,34 @@
           </div>
         } @else {
           @for (msg of messages(); track msg._id) {
-            <div 
-              [ngClass]="msg.sendingUser?.username === currentUsername() ? 'self-end bg-[#d9fdd3] text-gray-800 rounded-tr-none rounded-br-2xl' : 'self-start bg-white text-gray-800 rounded-tl-none rounded-bl-2xl'"
-              class="max-w-[70%] p-3 rounded-2xl shadow-sm text-sm flex flex-col relative transition-all"
-            >
-              <!-- שם השולח (מופיע רק בקבוצות ואם זה לא אני) -->
-              @if (chat.type === 'group' && msg.sendingUser?.username !== currentUsername()) {
-                <span class="text-[10px] text-[#008f6c] font-bold mb-1">{{ msg.sendingUser?.username }}</span>
-              }
-              <span class="leading-relaxed break-words font-medium">{{ msg.content }}</span>
-              <span class="text-[9px] text-gray-400 self-end mt-1 font-semibold">
-                {{ msg.createdAt | date:'HH:mm' }}
-              </span>
-            </div>
+            
+            <!-- 1. תצוגת הודעת מערכת (כגון: "המשתמש X יצא מהקבוצה") -->
+            @if (msg.isSystemMessage) {
+              <div class="flex justify-center my-2">
+                <div class="bg-white/85 backdrop-blur-sm border border-gray-200/80 text-gray-600 text-[11px] font-semibold px-3.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-sm text-[#00a884]">info</span>
+                  <span>{{ msg.content }}</span>
+                </div>
+              </div>
+            } 
+            
+            <!-- 2. תצוגת הודעת משתמש רגילה -->
+            @else {
+              <div 
+                [ngClass]="msg.sendingUser?.username === currentUsername() ? 'self-end bg-[#d9fdd3] text-gray-800 rounded-tr-none rounded-br-2xl' : 'self-start bg-white text-gray-800 rounded-tl-none rounded-bl-2xl'"
+                class="max-w-[70%] p-3 rounded-2xl shadow-sm text-sm flex flex-col relative transition-all"
+              >
+                <!-- שם השולח (מופיע רק בקבוצות ואם זה לא אני) -->
+                @if (chat.type === 'group' && msg.sendingUser?.username !== currentUsername()) {
+                  <span class="text-[10px] text-[#008f6c] font-bold mb-1">{{ msg.sendingUser?.username }}</span>
+                }
+                <span class="leading-relaxed break-words font-medium">{{ msg.content }}</span>
+                <span class="text-[9px] text-gray-400 self-end mt-1 font-semibold">
+                  {{ msg.createdAt | date:'HH:mm' }}
+                </span>
+              </div>
+            }
+
           } @empty {
             <div class="flex flex-col items-center justify-center h-full gap-3 text-center">
               <div class="w-16 h-16 rounded-full bg-white/50 text-[#00a884]/80 flex items-center justify-center shadow-inner">

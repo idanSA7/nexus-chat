@@ -2,6 +2,7 @@ import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, Conne
 import { Server, Socket } from 'socket.io';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from '../dto/createmessage.dto';
+import { ChatsService } from '../chats/chats.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessagesGateway {
@@ -9,7 +10,7 @@ export class MessagesGateway {
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly messagesService: MessagesService) {}
+  constructor(private readonly messagesService: MessagesService,private readonly chatsService: ChatsService) {}
 
   handleConnection(client: Socket) {
     console.log(` client connected: ${client.id}`);
@@ -67,4 +68,21 @@ export class MessagesGateway {
       console.error(' שגיאה בשמירת הודעה דרך הווב-סוקט:', error);
     }
   }
+@SubscribeMessage('leaveGroup')
+async handleLeaveGroup(
+  @ConnectedSocket() client: Socket,
+  @MessageBody() data: { chatId: string; username: string; userId: string }
+) {
+  try {
+    const updatedChat = await this.chatsService.removeMemberFromGroup(data.userId, data.chatId, data.username);
+    client.leave(data.chatId);
+
+    this.server.to(data.chatId).emit('groupUpdated', {
+      updatedChat,
+      removedUsername: data.username
+    });
+  } catch (error) {
+    console.error('שגיאה ביציאה מהקבוצה:', error);
+  }
+}
 }

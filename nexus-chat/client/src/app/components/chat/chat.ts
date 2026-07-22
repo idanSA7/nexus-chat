@@ -58,7 +58,6 @@ export class ChatComponent implements OnInit {
       const chat = this.activeChat();
       if (chat && chat._id) {
         this.loadMessages(chat._id);
-        
         this.websocketService.emit('joinRoom', chat._id);
       }
     });
@@ -78,6 +77,7 @@ export class ChatComponent implements OnInit {
 
     this.loadFriendsAndGroups(); 
 
+    // האזנה להודעות חדשות מצ'אט
     this.websocketService.listen<Message>('messageReceived').subscribe({
       next: (newMsg: Message) => {
         const chat = this.activeChat();
@@ -87,6 +87,25 @@ export class ChatComponent implements OnInit {
             return [...prev, newMsg];
           });
         }
+      }
+    });
+
+    // האזנה לעדכוני קבוצה (יציאה / הסרה)
+    this.websocketService.listen<{ updatedChat: Chat; removedUsername: string }>('groupUpdated').subscribe({
+      next: ({ updatedChat, removedUsername }) => {
+        const current = this.activeChat();
+        if (current && current._id === updatedChat._id) {
+          this.activeChat.set(updatedChat);
+
+          // הוספת הודעת מערכת בצורה נקייה וקצרה
+          this.messages.update(prev => [...prev, {
+            _id: Date.now().toString(),
+            content: `${removedUsername || 'משתמש'} יצא/ה מהקבוצה`,
+            isSystemMessage: true
+          } as Message]);
+        }
+
+        this.loadFriendsAndGroups();
       }
     });
   }
@@ -145,10 +164,10 @@ export class ChatComponent implements OnInit {
   }
 
   getAvatarInitials(item: Chat | User | null): string {
-  if (!item) return '??';
-  const name = ('name' in item && item.name) ? item.name : ('username' in item && item.username) ? item.username : '??';
-  return name.substring(0, 2).toUpperCase();
-}
+    if (!item) return '??';
+    const name = ('name' in item && item.name) ? item.name : ('username' in item && item.username) ? item.username : '??';
+    return name.substring(0, 2).toUpperCase();
+  }
 
   selectConversation(item: Chat | User) {
     if ('type' in item && item.type === 'group') {
@@ -187,18 +206,13 @@ export class ChatComponent implements OnInit {
     const chat = this.activeChat();
     if (!text || !chat) return;
 
-    this.messagesService.sendMessage(chat._id, text).subscribe({
-      next: (newMsg: Message) => {
-        this.messages.update(prev => {
-          if (prev.some(m => m._id === newMsg._id)) return prev;
-          return [...prev, newMsg];
-        });
-        this.newMessageText.set('');
-      },
-      error: (err: unknown) => {
-        console.error('שגיאה בשליחת הודעה:', err);
-      }
+    // שליחה ב-WebSocket בזמן אמת
+    this.websocketService.emit('sendMessage', {
+      chatId: chat._id,
+      content: text
     });
+
+    this.newMessageText.set('');
   }
 
   onGroupCreated(createdGroup: Chat) {

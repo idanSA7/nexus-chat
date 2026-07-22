@@ -7,6 +7,7 @@ export interface Message {
   receivingChat: string;     
   content: string;
   createdAt: string | Date;
+  isSystemMessage?: boolean; 
 }
 
 export interface CreateMessageDto {
